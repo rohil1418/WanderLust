@@ -8,6 +8,7 @@ const ejsMate = require("ejs-mate");
 const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { listingSchema } = require("./schema.js");
+const Review = require("./models/review.js");
 
 
 const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
@@ -26,6 +27,7 @@ async function main() {
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
@@ -34,6 +36,18 @@ app.use(express.static(path.join(__dirname, "/public")));
 app.get("/", (req, res) => {
     res.send("Hi i am Rohil");
 });
+
+const validateListing = (req , res , next) => {
+    let {error} = listingSchema.validate(req.body);
+     if (!req.body || !req.body.listing) {
+        throw new ExpressError(400, "listing is required");
+    }
+       if(error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new ExpressError(400, errMsg);
+       } 
+        next();
+}
 
 app.get("/listings", wrapAsync(async (req, res) => {
     const allListings = await Listing.find({});
@@ -52,21 +66,9 @@ app.get("/listings/:id", wrapAsync(async (req, res) => {
     res.render("listings/show.ejs", { listing });
 }));
 
-app.post("/listings",
+app.post("/listings", validateListing ,
     wrapAsync(async (req, res, next) => {
-        if (!req.body.listing) {
-            throw new ExpressError(400, "Send valid data for listing")
-        }
         const newListing = new Listing(req.body.listing);
-        if(!newListing.title) {
-            throw new ExpressError(400, "Title is missing")
-        }
-         if(!newListing.description) {
-            throw new ExpressError(400, "Description is missing")
-        }
-         if(!newListing.location) {
-            throw new ExpressError(400, "Location is missing")
-        }
         await newListing.save();
         res.redirect("/listings");
     })
@@ -80,7 +82,7 @@ app.get("/listings/:id/edit", wrapAsync(async (req, res) => {
 
 // Update route
 
-app.put("/listings/:id", wrapAsync(async (req, res) => {
+app.put("/listings/:id", validateListing , wrapAsync(async (req, res) => {
     if (!req.body.listing) {
         throw new ExpressError(400, "Send valid data for listing")
     }
@@ -95,6 +97,18 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
     console.log(deletedListing);
     res.redirect("/listings");
 }));
+
+app.post("/listings/:id/reviews", async(req , res) => {
+    let listing = await Listing.findById(req.params.id);
+    let newReview = new Review(req.body.review);
+
+    listing.reviews.push(newReview);
+
+    await newReview.save();
+    await listing.save();
+
+    res.redirect(`/listings/${listing._id}`);
+});
 
 
 // app.get("/testListing", async (req , res) => {
