@@ -7,7 +7,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
-const { listingSchema } = require("./schema.js");
+const { listingSchema , reviewSchema } = require("./schema.js");
 const Review = require("./models/review.js");
 
 
@@ -37,16 +37,26 @@ app.get("/", (req, res) => {
     res.send("Hi i am Rohil");
 });
 
-const validateListing = (req , res , next) => {
-    let {error} = listingSchema.validate(req.body);
-     if (!req.body || !req.body.listing) {
+const validateListing = (req, res, next) => {
+    let { error } = listingSchema.validate(req.body);
+    if (!req.body || !req.body.listing) {
         throw new ExpressError(400, "listing is required");
     }
-       if(error) {
+    if (error) {
         let errMsg = error.details.map((el) => el.message).join(",");
         throw new ExpressError(400, errMsg);
-       } 
-        next();
+    }
+    next();
+}
+
+const validateReview = (req, res, next) => {
+    let { error } = reviewSchema.validate(req.body);
+
+    if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new ExpressError(400, errMsg);
+    }
+    next();
 }
 
 app.get("/listings", wrapAsync(async (req, res) => {
@@ -62,11 +72,11 @@ app.get("/listings/new", (req, res) => {
 
 app.get("/listings/:id", wrapAsync(async (req, res) => {
     let { id } = req.params;
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findById(id).populate("reviews");
     res.render("listings/show.ejs", { listing });
 }));
 
-app.post("/listings", validateListing ,
+app.post("/listings", validateListing,
     wrapAsync(async (req, res, next) => {
         const newListing = new Listing(req.body.listing);
         await newListing.save();
@@ -82,7 +92,7 @@ app.get("/listings/:id/edit", wrapAsync(async (req, res) => {
 
 // Update route
 
-app.put("/listings/:id", validateListing , wrapAsync(async (req, res) => {
+app.put("/listings/:id", validateListing, wrapAsync(async (req, res) => {
     if (!req.body.listing) {
         throw new ExpressError(400, "Send valid data for listing")
     }
@@ -98,18 +108,19 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
     res.redirect("/listings");
 }));
 
-app.post("/listings/:id/reviews", async(req , res) => {
+app.post("/listings/:id/reviews", validateReview, wrapAsync(async (req, res) => {
     let listing = await Listing.findById(req.params.id);
+
     let newReview = new Review(req.body.review);
 
-    listing.reviews.push(newReview);
+    listing.reviews.push(newReview._id);
 
     await newReview.save();
     await listing.save();
 
     res.redirect(`/listings/${listing._id}`);
-});
-
+})
+);
 
 // app.get("/testListing", async (req , res) => {
 //     let sampleListing = new Listing ({
