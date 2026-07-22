@@ -16,7 +16,7 @@ const listingSchema = new Schema({
         },
         url: {
             type: String,
-            default: "https://img.magnific.com/premium-photo/random-image_590832-1108.jpg",
+            default: "default-image-url",
         },
     },
 
