@@ -10,35 +10,29 @@ const listingSchema = new Schema({
     description: String,
 
     image: {
-        filename: {
-            type: String,
-            default: "listingimage",
-        },
-        url: {
-            type: String,
-            default: "default-image-url",
-        },
+        url: String,
+        filename: String,
     },
 
     price: Number,
     location: String,
     country: String,
-    reviews : [
+    reviews: [
         {
             type: Schema.Types.ObjectId,
-            ref : "Review",
+            ref: "Review",
         }
     ],
-    owner : 
-        {
-            type: Schema.Types.ObjectId,
-            ref : "User",
-        }    
+    owner:
+    {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+    }
 });
 
-listingSchema.post("findOneAndDelete" , async (listing) => {
-    if(listing) {
-         await Review.deleteMany({ _id : {$in : listing.reviews} });
+listingSchema.post("findOneAndDelete", async (listing) => {
+    if (listing) {
+        await Review.deleteMany({ _id: { $in: listing.reviews } });
     }
 })
 
