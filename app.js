@@ -52,7 +52,7 @@ const store = MongoStore.create({
     touchAfter: 24 * 3600,
 });
 
-store.on("error" , () => {
+store.on("error" , (err) => {
     console.log("ERROR in MONGO SESSION STORE" , err);
 })
 
@@ -89,15 +89,9 @@ app.use((req , res , next) => {
     next();
 });
 
-// app.get("/demouser", async(req , res) => {
-//     let fakeUser = new user({
-//         email : "student@gmail.com",
-//         username : "RohilKhan",
-//     });
-
-//     let registeredUser = await user.register(fakeUser, "Rokha");
-//     res.send(registeredUser);
-// });
+app.get("/", (req, res) => {
+    res.redirect("/listings");
+});
 
 
 app.use("/listings" , listingRouter);
@@ -109,9 +103,6 @@ app.all("*splat", (req, res, next) => {
     next(new ExpressError(404, "Page not found"));
 });
 
-app.get("/", (req, res) => {
-    res.redirect("/listings");
-});
 
 app.use((err, req, res, next) => {
     let { statusCode = 500, message = "Somenthing Went Wrong" } = err;
@@ -119,6 +110,8 @@ app.use((err, req, res, next) => {
     // res.status(statusCode).send(message);
 });
 
-app.listen(8080, () => {
-    console.log("Server is listening to Port 8080");
+const port = process.env.PORT || 8080;
+
+app.listen(port, () => {
+    console.log(`Server is listening on Port ${port}`);
 });
