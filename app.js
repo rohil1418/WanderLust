@@ -109,6 +109,10 @@ app.all("*splat", (req, res, next) => {
     next(new ExpressError(404, "Page not found"));
 });
 
+app.get("/", (req, res) => {
+    res.redirect("/listings");
+});
+
 app.use((err, req, res, next) => {
     let { statusCode = 500, message = "Somenthing Went Wrong" } = err;
     res.status(statusCode).render("error.ejs", { message });
