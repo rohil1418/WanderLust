@@ -29,11 +29,13 @@ main()
         console.log("connect to DB");
     })
     .catch((err) => {
-        console.log("err");
+        console.log(err);
     });
 
 async function main() {
-    await mongoose.connect(dbUrl);
+    await mongoose.connect(dbUrl , {
+        family: 4,
+    });
 }
 
 app.set("view engine", "ejs");
